@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Juego Plataformero con Scroll</title>
+    <style>
+        body { 
+            margin: 0; 
+        }
+        canvas { 
+            display: block; 
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="640" height="480"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Variables del juego
+        let playerX = 50;
+        let playerY = 400;
+        let playerWidth = 30;
+        let playerHeight = 50;
+        let playerSpeed = 5;
+        let gravity = 0.5;
+        let velocityY = 0;
+        let isJumping = false;
+
+        // Variables de la cámara
+        let cameraX = 0;
+        const levelWidth = 2000; // Ancho total del nivel
+        const levelHeight = 480; // Altura del nivel
+
+        // Plataformas
+        let platforms = [
+            { x: 0, y: 450, width: 200, height: 30 },
+            { x: 250, y: 350, width: 150, height: 30 },
+            { x: 450, y: 250, width: 200, height: 30 },
+            { x: 700, y: 400, width: 200, height: 30 },
+            { x: 1000, y: 300, width: 200, height: 30 },
+            { x: 1500, y: 450, width: 300, height: 30 }
+        ];
+
+        // Meta
+        const goal = { x: 1800, y: 350, width: 30, height: 100 };
+
+        // jugador
+        function drawPlayer() {
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(playerX - cameraX, playerY, playerWidth, playerHeight);
+        }
+
+        // plataformas
+        function drawPlatforms() {
+            ctx.fillStyle = 'brown';
+            platforms.forEach(platform => {
+                ctx.fillRect(platform.x - cameraX, platform.y, platform.width, platform.height);
+            });
+        }
+
+        // dibujamos meta
+        function drawGoal() {
+            ctx.fillStyle = 'green';
+            ctx.fillRect(goal.x - cameraX, goal.y, goal.width, goal.height);
+        }
+
+        // Colisiones
+        function checkCollision(platform) {
+            return playerX < platform.x + platform.width &&
+                   playerX + playerWidth > platform.x &&
+                   playerY < platform.y + platform.height &&
+                   playerY + playerHeight > platform.y;
+        }
+
+        // lógica
+        function update() {
+            
+            if (rightPressed && playerX < levelWidth - playerWidth) {
+                playerX += playerSpeed;
+            }
+            if (leftPressed && playerX > 0) {
+                playerX -= playerSpeed;
+            }
+
+            //salto
+            velocityY += gravity;
+            playerY += velocityY;
+
+            // suelo collision
+            if (playerY + playerHeight > levelHeight) {
+                playerY = levelHeight - playerHeight;
+                velocityY = 0;
+                isJumping = false;
+            }
+
+            // plataformas collision
+            platforms.forEach(platform => {
+                if (checkCollision(platform)) {
+                    if (velocityY > 0 && playerY + playerHeight <= platform.y + platform.height) {
+                        playerY = platform.y - playerHeight;
+                        velocityY = 0;
+                        isJumping = false;
+                    }
+                }
+            });
+
+            // meta collision
+            if (
+                playerX < goal.x + goal.width &&
+                playerX + playerWidth > goal.x &&
+                playerY < goal.y + goal.height &&
+                playerY + playerHeight > goal.y
+            ) {
+                alert("¡Has llegado a la meta!");
+                resetGame();
+            }
+
+            // Scrollear
+            if (playerX > cameraX + canvas.width * 0.7) {
+                cameraX = playerX - canvas.width * 0.7;
+            }
+            if (playerX < cameraX + canvas.width * 0.3) {
+                cameraX = playerX - canvas.width * 0.3;
+            }
+            cameraX = Math.max(0, Math.min(cameraX, levelWidth - canvas.width));
+
+            // limpieza de canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawPlatforms();
+            drawGoal();
+            drawPlayer();
+
+            requestAnimationFrame(update);
+        }
+
+        // teclado
+        let rightPressed = false;
+        let leftPressed = false;
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'ArrowRight') {
+                rightPressed = true;
+            } else if (event.key === 'ArrowLeft') {
+                leftPressed = true;
+            } else if (event.key === ' ' && !isJumping) { // Espacio para saltar
+                velocityY = -10;
+                isJumping = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key === 'ArrowRight') {
+                rightPressed = false;
+            } else if (event.key === 'ArrowLeft') {
+                leftPressed = false;
+            }
+        });
+
+        // reiniciar juego
+        function resetGame() {
+            playerX = 50;
+            playerY = 400;
+            cameraX = 0;
+            velocityY = 0;
+            isJumping = false;
+        }
+
+        // Iniciar juego
+        update();
+    </script>
+</body>
+</html>
